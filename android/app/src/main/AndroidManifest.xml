@@ -1,7 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.example.no_nonsense_tasks">
    <application
-        android:label="no_nonsense_tasks"
+        android:label="No Nonsense Tasks"
         android:icon="@mipmap/ic_launcher">
         <activity
             android:name=".MainActivity"
