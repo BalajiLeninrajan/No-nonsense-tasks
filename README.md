@@ -1,3 +1,3 @@
 # No Nonsense Tasks
 
-A simple app for simple lists.
+A simple app for simple tasks.
