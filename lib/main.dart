@@ -26,7 +26,8 @@ class TaskView extends StatefulWidget {
   _TaskViewState createState() => _TaskViewState();
 }
 
-class _TaskViewState extends State<TaskView> with TickerProviderStateMixin {
+class _TaskViewState extends State<TaskView> {
+  final GlobalKey<AnimatedListState> listKey = GlobalKey<AnimatedListState>();
   List<String> _tasks = [];
   List<String> _completedTasks = [];
   final _textController = TextEditingController();
@@ -48,52 +49,56 @@ class _TaskViewState extends State<TaskView> with TickerProviderStateMixin {
       body: Column(
         children: [
           Flexible(
-            child: ListView.builder(
-              itemBuilder: (_, index) {
-                return Dismissible(
-                  key: UniqueKey(),
-                  child: _buildTask(_tasks[index]),
-                  onDismissed: (_) => _deleteTask(index),
-                  background: Container(
-                    color: Colors.red,
-                    alignment: Alignment.centerRight,
-                    child: const Icon(
-                      Icons.delete,
-                      color: Colors.white,
-                    ),
+              child: AnimatedList(
+            key: listKey,
+            initialItemCount: _tasks.length,
+            itemBuilder: (_, index, animation) {
+              return Dismissible(
+                key: UniqueKey(),
+                child: _buildTask(_tasks[index], animation),
+                onDismissed: (_) => _deleteTask(index),
+                background: Container(
+                  color: Colors.red,
+                  alignment: Alignment.centerRight,
+                  child: const Icon(
+                    Icons.delete,
+                    color: Colors.white,
                   ),
-                );
-              },
-              itemCount: _tasks.length,
-              reverse: true,
-            ),
-          ),
+                ),
+              );
+            },
+            reverse: true,
+          )),
           _textComposer(),
         ],
       ),
     );
   }
 
-  Widget _buildTask(String text) {
+  Widget _buildTask(String text, animation) {
     return Container(
       margin: const EdgeInsets.only(right: 20.0),
-      child: Row(
-        children: [
-          IconButton(
-            icon: _completedTasks.contains(text)
-                ? const Icon(Icons.check_box)
-                : const Icon(Icons.check_box_outline_blank),
-            onPressed: () => _handleCompleted(text),
-          ),
-          Expanded(
-            child: Text(
-              text,
-              style: Theme.of(context).textTheme.headline5,
+      child: SizeTransition(
+        sizeFactor: CurvedAnimation(
+            parent: animation, curve: Curves.fastLinearToSlowEaseIn),
+        child: Row(
+          children: [
+            IconButton(
+              icon: _completedTasks.contains(text)
+                  ? const Icon(Icons.check_box)
+                  : const Icon(Icons.check_box_outline_blank),
+              onPressed: () => _handleCompleted(text),
             ),
-          ),
-          const Spacer(),
-          const Icon(Icons.arrow_back)
-        ],
+            Expanded(
+              child: Text(
+                text,
+                style: Theme.of(context).textTheme.headline5,
+              ),
+            ),
+            const Spacer(),
+            const Icon(Icons.arrow_back)
+          ],
+        ),
       ),
     );
   }
@@ -131,6 +136,10 @@ class _TaskViewState extends State<TaskView> with TickerProviderStateMixin {
     setState(() {
       _tasks = prefs.getStringList('tasks') ?? [];
       _completedTasks = prefs.getStringList('completedTasks') ?? [];
+      for (int i = 0; i < _tasks.length; i++) {
+        listKey.currentState!
+            .insertItem(0, duration: const Duration(milliseconds: 500));
+      }
     });
   }
 
@@ -141,6 +150,8 @@ class _TaskViewState extends State<TaskView> with TickerProviderStateMixin {
       _isComposing = false;
     });
     setState(() {
+      listKey.currentState!
+          .insertItem(0, duration: const Duration(milliseconds: 700));
       _tasks.insert(0, task);
     });
     await prefs.setStringList('tasks', _tasks);
@@ -157,9 +168,13 @@ class _TaskViewState extends State<TaskView> with TickerProviderStateMixin {
     await prefs.setStringList('completedTasks', _completedTasks);
   }
 
+  // ignore: unused_element
   void _deleteTask(int index) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     setState(() {
+      listKey.currentState!.removeItem(
+          index, (_, animation) => _buildTask(_tasks[index], animation),
+          duration: const Duration(milliseconds: 0));
       _tasks.removeAt(index);
     });
     await prefs.setStringList('tasks', _tasks);
