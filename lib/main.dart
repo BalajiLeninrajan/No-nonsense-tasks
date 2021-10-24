@@ -149,12 +149,24 @@ class _TaskViewState extends State<TaskView> {
     setState(() {
       _isComposing = false;
     });
-    setState(() {
-      listKey.currentState!
-          .insertItem(0, duration: const Duration(milliseconds: 700));
-      _tasks.insert(0, task);
-    });
-    await prefs.setStringList('tasks', _tasks);
+    if (_tasks.contains(task)) {
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: const Text('Task already exists'),
+        action: SnackBarAction(
+            label: 'Dismiss',
+            onPressed: () {
+              ScaffoldMessenger.of(context).hideCurrentSnackBar();
+            }),
+      ));
+    } else {
+      setState(() {
+        listKey.currentState!
+            .insertItem(0, duration: const Duration(milliseconds: 700));
+        _tasks.insert(0, task);
+      });
+      await prefs.setStringList('tasks', _tasks);
+    }
     _focusNode.requestFocus();
   }
 
